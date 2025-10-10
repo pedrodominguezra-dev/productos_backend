@@ -23,7 +23,19 @@ Esto ayudara a cargar un usuario para ingresar a la plataforma además de ingres
 php artisan db:seed
 ```
 
+### Crear nueva key para el sistema
+Este token ofrece un candado de seguridad 
+
+```
+php artisan key:generate
+```
+
 ### Ejecutar el sistema
 ```
 php artisan serve
+```
+
+El sistema se encontrá alojado en la url
+```
+http://127.0.0.1:8000/api
 ```

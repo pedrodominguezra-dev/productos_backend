@@ -1,65 +1,45 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Data\ProductData;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\ParamsTableRequest;
 use App\Models\Product;
+use App\Services\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    public function __construct(
+        protected ProductService $productService
+    ) {}
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function index(ParamsTableRequest $request)
     {
-        //
-    }
+        try {
+            $search = $request->input('search', '') ?? '';
+            $offset = $request->input('offset', 0) ?? 0;
+            $limit = $request->input('limit', 10) ?? 10;
+            $results = $this->productService->getProducts(
+                $search,
+                $offset,
+                $limit
+            );
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Product $product)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Product $product)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Product $product)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Product $product)
-    {
-        //
+            return response()->json([
+                'total' => $results['total'],
+                'products' => $results['products']
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Error al obtener los productos ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Ha sucedido un error inesperado al obtener los productos',
+                'development' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 }

@@ -3,29 +3,33 @@
 namespace App\Services;
 
 use App\Data\ProductData;
+use App\Data\ResponseData;
+use App\Data\SearchData;
 use App\Models\Product;
+use Throwable;
 
 class ProductService
 {
 
-    public function getProducts(?string $search = null, ?int $offset = 0, ?int $limit = 10)
+    public function getProducts(SearchData $searchData)
     {
-        $query = Product::query();
 
-        if ($search) {
-            $query->where('name', 'like', '%' . $search . '%')
-                ->orWhere('description', 'like', '%' . $search . '%');
+        try {
+            $products = Product::search($searchData->query)->paginate(
+                perPage: $searchData->limit,
+                page: ($searchData->offset / $searchData->limit) + 1,
+            );
+
+            return new ResponseData(
+                message: 'Productos obtenidos correctamente',
+                data: $products,
+                code: 200
+            );
+        } catch (Throwable $e) {
+            return new ResponseData(
+                message: 'Error al buscar los productos: ' . $e->getMessage(),
+                code: 500
+            );
         }
-
-        $total = $query->count();
-        $products = $query->skip($offset)->take($limit)->get();
-
-        $products = $products->map(fn($product) => $this->transform($product));
-        return compact('total', 'products');
-    }
-
-    public function transform(Product $product): ProductData
-    {
-        return ProductData::from($product);
     }
 }

@@ -24,7 +24,7 @@ class ParamsTableRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'search' => 'nullable|string|max:100',
+            'query' => 'nullable|string|max:100',
             'offset' => 'nullable|integer|min:0',
             'limit' => 'nullable|integer|min:1|max:100',
         ];
@@ -33,8 +33,8 @@ class ParamsTableRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'search.string' => 'La palabra a buscar en la tabla no es válido',
-            'search.max' => 'El máximo de palabras a buscar es 100 caracteres',
+            'query.string' => 'La palabra a buscar en la tabla no es válido',
+            'query.max' => 'El máximo de palabras a buscar es 100 caracteres',
             'offset.integer' => 'El offset es inválido',
             'offset.min' => 'El offset debe ser al menos 0',
             'limit.integer' => 'El límite de datos a mostrar no es válido',

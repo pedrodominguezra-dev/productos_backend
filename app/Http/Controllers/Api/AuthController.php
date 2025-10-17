@@ -4,38 +4,32 @@ namespace App\Http\Controllers\Api;
 
 use App\Data\LoginData;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\LoginRequest;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+
 
 class AuthController extends Controller
 {
 
-    public function __construct() {}
+    // Controlador para la autenticación de usuarios
+    public function __construct(
+        protected AuthService $authService,
+    ) {}
 
-    public function login(Request $request)
+    
+    public function login(LoginRequest $request, LoginData $data)
     {
-        $dataValidated = LoginData::validateAndCreate($request->only(['email', 'password']));
-
-        $user = User::where('email', $dataValidated->email)->first();
-
-        if (! $user || ! Hash::check($dataValidated->password, $user->password)) {
-            return response()->json(['message' => 'Credenciales inválidas'], 401);
-        }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
+        return $this->authService->login($data);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        return $this->authService->logout($request->user());
+    }
 
-        return response()->json(['message' => 'Sesión cerrada correctamente']);
+    public function me(Request $request)
+    {
+        return $this->authService->me($request->user());
     }
 }

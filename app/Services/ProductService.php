@@ -6,6 +6,7 @@ use App\Data\ProductData;
 use App\Data\ResponseData;
 use App\Data\SearchData;
 use App\Models\Product;
+use Error;
 use Throwable;
 
 class ProductService
@@ -15,20 +16,22 @@ class ProductService
     {
 
         try {
-            $products = Product::search($searchData->query)->paginate(
-                perPage: $searchData->limit,
-                page: ($searchData->offset / $searchData->limit) + 1,
+            $products = Product::search($searchData->search)->paginate(
+                perPage: $searchData->perPage,
+                page: ($searchData->page),
             );
-
+            
             return new ResponseData(
                 message: 'Productos obtenidos correctamente',
                 data: $products,
-                code: 200
+                code: 200,
+                status: true
             );
         } catch (Throwable $e) {
             return new ResponseData(
-                message: 'Error al buscar los productos: ' . $e->getMessage(),
-                code: 500
+                message: 'Hubo un error inesperado al buscar los productos: ' . $e->getMessage(),
+                code: 500,
+                status: false
             );
         }
     }

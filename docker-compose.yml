@@ -2,9 +2,7 @@ services:
   mysql:
     container_name: mysql_products
     image: mysql
-    restart: unless-stopped
-    volumes:
-      - ./persistencia/db:/var/lib/mysql
+    restart: unless-stopped   
     ports:
       - ${DB_PORT}:3306
     environment:
@@ -13,7 +11,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     networks:
-      - products-backend
+      - products-network
 
   phpmyadmin:
     container_name: phpmyadmin_products
@@ -26,7 +24,7 @@ services:
     depends_on:
       - mysql
     networks:
-      - products-backend
+      - products-network
 
   redis:
     image: redis:alpine
@@ -36,7 +34,7 @@ services:
     ports:
       - ${REDIS_PORT}:6379
     networks:
-      - products-backend
+      - products-network
 
   meilisearch:
     image: getmeili/meilisearch:latest
@@ -49,5 +47,5 @@ services:
       MEILI_MASTER_KEY: ${MEILISEARCH_KEY}
 
 networks:
-  products-backend:
+  products-network:
     driver: bridge

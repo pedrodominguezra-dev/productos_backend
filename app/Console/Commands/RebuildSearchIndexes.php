@@ -36,6 +36,7 @@ class RebuildSearchIndexes extends Command
 
         $this->info('Importando registros a los índices...');
         Artisan::call('scout:import', ['model' => 'App\Models\Product']);
+        Artisan::call('scout:import', ['model' => 'App\Models\User']);
         // Agrega todos tus modelos que sean "searchable"
         $this->info('Importación completada.');
 

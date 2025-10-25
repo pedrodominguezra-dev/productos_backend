@@ -1,0 +1,53 @@
+services:
+  mysql:
+    container_name: mysql_products
+    image: mysql
+    restart: unless-stopped
+    volumes:
+      - ./persistencia/db:/var/lib/mysql
+    ports:
+      - ${DB_PORT}:3306
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - products-backend
+
+  phpmyadmin:
+    container_name: phpmyadmin_products
+    image: phpmyadmin
+    restart: unless-stopped
+    ports:
+      - 8081:80
+    environment:
+      - PMA_HOST=mysql
+    depends_on:
+      - mysql
+    networks:
+      - products-backend
+
+  redis:
+    image: redis:alpine
+    container_name: redis_products
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
+    ports:
+      - ${REDIS_PORT}:6379
+    networks:
+      - products-backend
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: meilisearch_products
+    restart: unless-stopped
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY}
+
+networks:
+  products-backend:
+    driver: bridge

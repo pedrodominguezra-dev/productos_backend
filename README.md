@@ -4,6 +4,8 @@ Este proyecto tiene como fin desarollar una prueba de evaluación.
 
 ## Pasos para instalar y ejecutar el proyecto
 
+Antes de empezar con la instalación, el equipo debe tener instalado PHP con una versión 8.2 o superior. Además del paquete de composer ya que es fundamental para la instalación de paquetes
+
 ### Instalar las dependencias
 ```
 composer  i
@@ -13,13 +15,20 @@ composer  i
 Al clonar el repositorio debe de copiar el .env.example a cambiar el nombre a .env, para configurar la base de datos asi como otra configuración necesaria con las credenciales correspondientes, estas configuraciones se mencionan a continuación
 
 * Credenciales de mysql
+    * DB_PORT=3306
+    * DB_DATABASE
+    * DB_USERNAME
+    * DB_PASSWORD
+
 * Meiliserach
+    * Meilisearch tiene una configuración base, en caso de que desee cambiarla, deberá cambiarla en el archivo de docker-compose.yml
     * MEILISEARCH_KEY generar una llave segura
 * Otra configuración necesaria a sus necesidades
 
-### Ejecutar los contenedores de Docker
+### Ejecutar el docker-composer
+Debera ejecutar el archivo de docker-composer.yml con el siguiente comando:
 ```
-docker composer up
+ docker-compose up --build
 ```
 
 Esto descargara los contenedores necesarios, en caso de que quiera cambiar algun puerto en específico, es necesario revisar el docker-compose.yml y modificar las variables de entorno.
@@ -55,7 +64,7 @@ php artisan app:rebuild-all
 php artisan serve
 ```
 
-El sistema se encontrá alojado en la url
+El sistema api se encontrá alojado en la url
 ```
 http://127.0.0.1:8000/api
 ```

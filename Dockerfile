@@ -1,57 +1,31 @@
-FROM php:8.2-fpm
+FROM php:8.3-fpm
 
-# Instalar dependencias del sistema
+# Instalar extensiones
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    git \
-    curl \
-    libssl-dev
+    git unzip libzip-dev libonig-dev libpng-dev libjpeg-dev libxml2-dev \
+    curl zip sudo procps \
+  && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+  && pecl install xdebug-3.2.2 || true \
+  && docker-php-ext-enable xdebug
 
-# Limpiar cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Composer
+COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
-# Instalar extensiones de PHP
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
+WORKDIR /var/www/html
 
-# Configurar PHP-FPM para escuchar en el puerto correcto
-RUN echo "listen = 0.0.0.0:9000" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
-    && echo "listen.owner = www-data" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
-    && echo "listen.group = www-data" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
-    && echo "pm.max_children = 10" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
-    && echo "pm.start_servers = 2" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
-    && echo "pm.min_spare_servers = 1" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
-    && echo "pm.max_spare_servers = 3" >> /usr/local/etc/php-fpm.d/zz-docker.conf
+# Copiar composer.json y lock
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-plugins --no-scripts --prefer-dist
 
+# Copiar el resto del código
+COPY . .
 
-# Instalar Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Ejecutar composer
+RUN composer dump-autoload -o
 
-# Instalar Redis extension
-RUN pecl install redis && docker-php-ext-enable redis
+# Ajusta los permisos
+RUN chown -R www-data:www-data /var/www/html \
+  && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Crear usuario para la aplicación
-RUN groupadd -g 1000 www
-RUN useradd -u 1000 -ms /bin/bash -g www www
-
-# Copiar el contenido de la aplicación
-COPY ./ /var/www/html
-
-# Copiar el directorio de la aplicación y cambiar propietario
-COPY --chown=www:www . /var/www/html
-
-# Cambiar al usuario www
-USER www
-
-# Exponer el puerto 9000
 EXPOSE 9000
-
 CMD ["php-fpm"]

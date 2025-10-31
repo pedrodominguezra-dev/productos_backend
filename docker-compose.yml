@@ -1,111 +1,107 @@
 version: '3.8'
 
 services:
-  # Servicio de la aplicación Laravel
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    image: laravel_app:latest
     container_name: laravel_app
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./:/var/www/html
-      - ./php/php.ini:/usr/local/etc/php/php.ini
-    networks:
-      - laravel-network
     depends_on:
       - mysql
       - redis
       - meilisearch
-
-  # Servidor Web Nginx
-  webserver:
-    image: nginx:alpine
-    container_name: nginx_server
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
-      - ./:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - .:/var/www/html:delegated
+      - ./docker/php/php-ini-overrides.ini:/usr/local/etc/php/conf.d/overrides.ini:ro
+    environment:
+      APP_ENV: local
+      APP_DEBUG: 'true'
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: products_laravel
+      DB_USERNAME: products_laravel
+      DB_PASSWORD: admin
+      REDIS_HOST: redis
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_KEY: masterKey
     networks:
-      - laravel-network
+      - laravel
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: laravel_nginx
+    ports:
+      - "8080:80"
     depends_on:
       - app
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - laravel
 
-  # Base de datos MySQL
   mysql:
     image: mysql:8.0
-    container_name: mysql_db
+    container_name: laravel_mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: laravel
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_PASSWORD: password
-      MYSQL_USER: laraveluser
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: products_laravel
+      MYSQL_USER: products_laravel
+      MYSQL_PASSWORD: admin
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
     networks:
-      - laravel-network
+      - laravel
 
-  # Redis
   redis:
-    image: redis:alpine
-    container_name: redis_cache
-    restart: unless-stopped
+    image: redis:7-alpine
+    container_name: laravel_redis
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
-      - ./redis/redis.conf:/etc/redis/redis.conf
     ports:
       - "6379:6379"
     networks:
-      - laravel-network
+      - laravel
 
-  # Meilisearch
   meilisearch:
-    image: getmeili/meilisearch
-    container_name: meilisearch
-    restart: unless-stopped
+    image: getmeili/meilisearch:v1.12.0
+    container_name: laravel_meilisearch
     environment:
-      MEILI_MASTER_KEY: masterKey1234567890
-      MEILI_ENV: production
+      MEILI_MASTER_KEY: masterKey
     volumes:
-      - meilisearch_data:/data.ms
+      - meili_data:/meili_data
     ports:
       - "7700:7700"
     networks:
-      - laravel-network
+      - laravel
 
-  # Horizon (opcional, para queues)
-  horizon:
+  worker:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel_horizon
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./:/var/www/html
-    networks:
-      - laravel-network
+    container_name: laravel_worker
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
     depends_on:
-      - redis
       - mysql
-    command: php artisan horizon
+      - redis
+    volumes:
+      - .:/var/www/html:delegated
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+    networks:
+      - laravel
 
 volumes:
   mysql_data:
-    driver: local
   redis_data:
-    driver: local
-  meilisearch_data:
-    driver: local
+  meili_data:
 
 networks:
-  laravel-network:
+  laravel:
     driver: bridge
